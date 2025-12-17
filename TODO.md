@@ -1,0 +1,4 @@
+ - [ ] Smooth fractal computing
+ - [ ] Convert computing part to C
+ - [ ] Create `class` structure in python
+ - [ ] Integrate mouse zoom and drag
