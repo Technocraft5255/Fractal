@@ -3,14 +3,26 @@ import threading
 import sys
 import time
 from PIL import Image
+import ctypes
 
-zoom = 2 / 3
-width, height = 1920, 1080
-x_origin, y_origin = width // 2, height // 2
-mode = "window"
+
+screen_width, screen_height = 1920, 1080
+
 _exit = False
-image = None
-image_path = ""
+
+julia_dll = ctypes.CDLL("./build/julia.dll")
+julia_set_generator = julia_dll.julia_set_generator
+julia_set_generator.argtypes = [
+    ctypes.c_double, # param : julia_param_real
+    ctypes.c_double, # param : julia_param_imag
+    ctypes.c_int,    # param : screen_width
+    ctypes.c_int,    # param : screen_height
+    ctypes.c_double, # param : world_x_min
+    ctypes.c_double, # param : world_x_max
+    ctypes.c_double, # param : world_y_min
+    ctypes.c_double  # param : world_y_max
+]
+julia_set_generator.restype = ctypes.POINTER(ctypes.c_int * (screen_width * screen_height))
 
 
 if '--val' in sys.argv:
@@ -32,18 +44,21 @@ if '--image' in sys.argv:
     mode = "image"
     image_path = sys.argv[sys.argv.index("--image") + 1]
 else:
+    mode = "window"
     image_path = ""
 
 if mode == "image":
-    image = Image.new('RGB', (width, height), color='white')
+    image = Image.new('RGB', (screen_width, screen_height), color='white')
 else:
     pygame.init()
     pygame.display.set_caption("Fractal Generator by Technocraft5255")
     pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
-    window = pygame.display.set_mode((width, height), pygame.locals.FULLSCREEN)
+    window = pygame.display.set_mode((screen_width, screen_height), pygame.locals.FULLSCREEN)
     _exit = False
     window.fill((255, 255, 255))
     font = pygame.font.SysFont("Gothic A1 black", 50)
+    
+    image = None
 
 
 start_time = time.time()
@@ -60,7 +75,11 @@ def show_px(x1, x2):
     global x_origin, y_origin
     for xpx in range(int(x1), int(x2)):
         for ypx in range(int(-y_origin), int(y_origin)):
-            val = julia_compute((xpx / y_origin * (1 / zoom) + ypx / y_origin * 1j * (1 / zoom)))
+            compute_z = complex(xpx / y_origin * (1 / zoom), ypx / y_origin * (1 / zoom))
+            
+
+            #val = julia_compute_c(compute_z_c, cxmath.Complex(func_val.real, func_val.imag))
+            val = julia_compute(compute_z)
             if val != -1:
                 if mode == "image":
                     image.putpixel((xpx + x_origin, ypx + y_origin), (val, val, 255))
