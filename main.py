@@ -60,81 +60,53 @@ else:
     
     image = None
 
-
+# Starting julia set compute
 start_time = time.time()
 
-
-def wait_computing_ended():
-    global threads
-    while True:
-        if len([t for t in threads if t.is_alive()]) == 0:
-            break
-
-
-def show_px(x1, x2):
-    global x_origin, y_origin
-    for xpx in range(int(x1), int(x2)):
-        for ypx in range(int(-y_origin), int(y_origin)):
-            compute_z = complex(xpx / y_origin * (1 / zoom), ypx / y_origin * (1 / zoom))
+julia_result_table = julia_set_generator(func_val.real, func_val.imag, 1920, 1080, -2.0, 2.0, -9.0/8, 9.0/8)
+print(julia_result_table.contents[0])
+if mode == "image":
+    for y in range(screen_height):
+        for x in range(screen_width):
+            color_value = julia_result_table.contents[y * screen_width + x]
+            image.putpixel((x, y), (color_value, color_value, color_value))
+else:
+    for y in range(screen_height):
+        for x in range(screen_width):
             
-
-            #val = julia_compute_c(compute_z_c, cxmath.Complex(func_val.real, func_val.imag))
-            val = julia_compute(compute_z)
-            if val != -1:
-                if mode == "image":
-                    image.putpixel((xpx + x_origin, ypx + y_origin), (val, val, 255))
-                else:
-                    window.fill((val, val, 255), ((xpx + x_origin, ypx + y_origin), (1, 1)))
+            color_value = julia_result_table.contents[y * screen_width + x]
+            if color_value != -1:
+                window.set_at((x, y), (color_value, color_value, 255))
             else:
-                if mode == "image":
-                    image.putpixel((xpx + x_origin, ypx + y_origin), (0, 0, 0))
-                else:
-                    window.fill((0, 0, 0), ((xpx + x_origin, ypx + y_origin), (1, 1)))
+                window.set_at((x, y), (0, 0, 0))
 
-
-def julia_compute(a) -> int:
-    global func_val
-    temp_val = func_val
-    for i in range(100):
-        a = a ** 2 + temp_val
-        if a.real > 10 ** 50 or a.imag > 10 ** 50:
-            return min(i * 5, 255)
-    return -1
-
-
-threads = []
-for i in range(threads_num):
-    t = threading.Thread(target=show_px, args=(
-        -x_origin + (x_origin / (threads_num / 2) * i),
-        -x_origin + x_origin / (threads_num / 2) + (x_origin / (threads_num / 2) * i)
-    ))
-    t.start()
-    threads.append(t)
-
-wait_computing_ended()
 print(f"Time taken: {round(time.time() - start_time, 2)} seconds with {threads_num} threads")
 
-if mode != "image":
-    if not hidden:
-        window.blit(font.render(f"Z²-{func_val.real}+{func_val.imag}i", True, (0, 0, 0)), (15, 15))
-        pygame.draw.rect(window, (255, 0, 0), (0, window.get_height() / 2, window.get_width(), 1))
-        pygame.draw.rect(window, (0, 255, 0), (window.get_width() / 2, 0, 1, window.get_height()))
-        pygame.draw.rect(window, (255, 255, 0), (window.get_width() / 2, window.get_height() / 2, 1, 1))
-        pygame.mouse.set_visible(False)
+# Save the image if the user wants to save it as an image
+if mode == "image":
+    image.save(f"{image_path}")
+    pygame.quit()
+    sys.exit()
 
-    while not _exit:
+# Display the window if the user wants to display it as a window
+if not hidden: # Check if the user wants to hide the info and axes
+    window.blit(font.render(f"Z²-{func_val.real}+{func_val.imag}i", True, (0, 0, 0)), (15, 15))
+    pygame.draw.rect(window, (255, 0, 0), (0, window.get_height() / 2, window.get_width(), 1))
+    pygame.draw.rect(window, (0, 255, 0), (window.get_width() / 2, 0, 1, window.get_height()))
+    pygame.draw.rect(window, (255, 255, 0), (window.get_width() / 2, window.get_height() / 2, 1, 1))
+    pygame.mouse.set_visible(False)
 
-        pygame.display.flip()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+while not _exit:
+    pygame.display.flip()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            _exit = True
+            pygame.quit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
                 _exit = True
                 pygame.quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    _exit = True
-                    pygame.quit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    pass
-else:
-    image.save(f"{image_path}")
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                pass
+
