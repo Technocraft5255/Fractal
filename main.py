@@ -63,13 +63,16 @@ else:
 # Starting julia set compute
 start_time = time.time()
 
-julia_result_table = julia_set_generator(func_val.real, func_val.imag, 1920, 1080, -2.0, 2.0, -9.0/8, 9.0/8)
-print(julia_result_table.contents[0])
+julia_result_table = julia_set_generator(func_val.real, func_val.imag, screen_width, screen_height, -2.0, 2.0, -9.0/8, 9.0/8)
+print(f"Time taken for julia set: {round(time.time() - start_time, 2)} seconds with {threads_num} threads")
+
 if mode == "image":
     for y in range(screen_height):
         for x in range(screen_width):
             color_value = julia_result_table.contents[y * screen_width + x]
-            image.putpixel((x, y), (color_value, color_value, color_value))
+            if color_value == -1:
+                color_value = 0
+            image.putpixel((x, y), (color_value, color_value,-int(color_value/2+128)+255 ))
 else:
     for y in range(screen_height):
         for x in range(screen_width):
@@ -80,7 +83,7 @@ else:
             else:
                 window.set_at((x, y), (0, 0, 0))
 
-print(f"Time taken: {round(time.time() - start_time, 2)} seconds with {threads_num} threads")
+print(f"Time taken for all: {round(time.time() - start_time, 2)} seconds with {threads_num} threads")
 
 # Save the image if the user wants to save it as an image
 if mode == "image":
